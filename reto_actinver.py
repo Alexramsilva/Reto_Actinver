@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # ============================================================
 
 st.set_page_config(
-    page_title="Reto Actinver - Análisis Financiero",
+    page_title="Reto Actinver",
     page_icon="📈",
     layout="wide"
 )
@@ -17,15 +17,12 @@ st.set_page_config(
 st.title("📈 Reto Actinver")
 st.subheader("Análisis financiero con Yahoo Finance")
 
-st.markdown(
-    """
-    Esta aplicación permite analizar diferentes acciones y activos
-    financieros utilizando sus claves de Yahoo Finance.
-    """
+st.write(
+    "Seleccione una acción o activo financiero para realizar el análisis."
 )
 
 # ============================================================
-# SIDEBAR - SELECCIÓN DEL ACTIVO
+# SELECCIÓN DEL ACTIVO
 # ============================================================
 
 st.sidebar.header("🔎 Selección del activo")
@@ -42,51 +39,27 @@ opciones = [
 
 opcion = st.sidebar.selectbox(
     "Seleccione el activo:",
-    opciones
+    opciones,
+    index=0
 )
 
-# Si selecciona "Otra clave", permite escribir cualquier ticker
 if opcion == "Otra clave":
 
-    ticker_input = st.sidebar.text_input(
-        "Escriba la clave de Yahoo Finance:",
+    ticker = st.sidebar.text_input(
+        "Clave de Yahoo Finance:",
+        value="AAPL",
         placeholder="Ejemplo: AAPL, MSFT, NVDA"
     ).strip().upper()
 
 else:
 
-    ticker_input = opcion
+    ticker = opcion
 
 st.sidebar.markdown("---")
 
-st.sidebar.write(
-    f"**Clave seleccionada:** `{ticker_input}`"
+st.sidebar.success(
+    f"Activo seleccionado: {ticker}"
 )
-
-analizar = st.sidebar.button(
-    "📊 Analizar activo",
-    type="primary",
-    use_container_width=True
-)
-
-# ============================================================
-# CONTROL DEL ACTIVO
-# ============================================================
-
-if "ticker_analizado" not in st.session_state:
-    st.session_state.ticker_analizado = "SOFI"
-
-if analizar:
-
-    if ticker_input == "":
-        st.sidebar.error(
-            "Ingrese una clave de Yahoo Finance."
-        )
-
-    else:
-        st.session_state.ticker_analizado = ticker_input
-
-ticker = st.session_state.ticker_analizado
 
 # ============================================================
 # FUNCIONES
@@ -123,45 +96,36 @@ def obtener_fundamentales(ticker):
 
         info = activo.info
 
+        return {
+            "Price/Earnings": info.get("trailingPE"),
+            "Price/Book": info.get("priceToBook"),
+            "Debt/Equity": info.get("debtToEquity"),
+            "Return on Equity": info.get("returnOnEquity"),
+            "Dividend Yield": info.get("dividendYield")
+        }
+
     except Exception:
 
-        info = {}
-
-    return {
-        "Price/Earnings": info.get("trailingPE"),
-        "Price/Book": info.get("priceToBook"),
-        "Debt/Equity": info.get("debtToEquity"),
-        "Return on Equity": info.get("returnOnEquity"),
-        "Dividend Yield": info.get("dividendYield")
-    }
+        return {
+            "Price/Earnings": None,
+            "Price/Book": None,
+            "Debt/Equity": None,
+            "Return on Equity": None,
+            "Dividend Yield": None
+        }
 
 
-def obtener_close(df, ticker):
+def obtener_close(df):
 
     if df.empty:
-
         return pd.Series(dtype=float)
 
     # --------------------------------------------------------
-    # Cuando yfinance devuelve MultiIndex
+    # yfinance puede devolver MultiIndex
     # --------------------------------------------------------
 
     if isinstance(df.columns, pd.MultiIndex):
 
-        # Intentar obtener Close del ticker
-        try:
-
-            close = df["Close"][ticker]
-
-            if isinstance(close, pd.DataFrame):
-                close = close.iloc[:, 0]
-
-            return close
-
-        except Exception:
-            pass
-
-        # Segunda alternativa
         try:
 
             close = df.xs(
@@ -171,15 +135,17 @@ def obtener_close(df, ticker):
             )
 
             if isinstance(close, pd.DataFrame):
+
                 close = close.iloc[:, 0]
 
             return close
 
         except Exception:
+
             pass
 
     # --------------------------------------------------------
-    # Cuando yfinance devuelve columnas normales
+    # DataFrame normal
     # --------------------------------------------------------
 
     if "Close" in df.columns:
@@ -187,6 +153,7 @@ def obtener_close(df, ticker):
         close = df["Close"]
 
         if isinstance(close, pd.DataFrame):
+
             close = close.iloc[:, 0]
 
         return close
@@ -195,11 +162,11 @@ def obtener_close(df, ticker):
 
 
 # ============================================================
-# DESCARGAR DATOS
+# DESCARGAR INFORMACIÓN
 # ============================================================
 
 with st.spinner(
-    f"Consultando información de {ticker} en Yahoo Finance..."
+    f"Consultando Yahoo Finance para {ticker}..."
 ):
 
     try:
@@ -209,14 +176,14 @@ with st.spinner(
     except Exception as e:
 
         st.error(
-            f"No fue posible consultar Yahoo Finance: {e}"
+            f"Error al consultar Yahoo Finance: {e}"
         )
 
         st.stop()
 
 
 # ============================================================
-# VALIDAR DATOS
+# VALIDACIÓN
 # ============================================================
 
 if datos_5y.empty:
@@ -232,14 +199,10 @@ if datos_5y.empty:
     st.stop()
 
 
-# ============================================================
-# PRECIO DE CIERRE
-# ============================================================
+close_5y = obtener_close(datos_5y)
 
-close_5y = obtener_close(
-    datos_5y,
-    ticker
-)
+close_5y = close_5y.dropna()
+
 
 if close_5y.empty:
 
@@ -249,36 +212,32 @@ if close_5y.empty:
 
     st.stop()
 
-close_5y = close_5y.dropna()
-
 
 # ============================================================
-# INFORMACIÓN GENERAL
+# ACTIVO SELECCIONADO
 # ============================================================
 
 st.info(
     f"📌 Activo analizado: **{ticker}**"
 )
 
-precio_actual = float(
-    close_5y.iloc[-1]
-)
 
-precio_inicial = float(
-    close_5y.iloc[0]
-)
+# ============================================================
+# INFORMACIÓN GENERAL
+# ============================================================
+
+precio_actual = float(close_5y.iloc[-1])
+
+precio_inicial = float(close_5y.iloc[0])
 
 rendimiento_total = (
     precio_actual / precio_inicial - 1
 )
 
-maximo = float(
-    close_5y.max()
-)
+maximo = float(close_5y.max())
 
-minimo = float(
-    close_5y.min()
-)
+minimo = float(close_5y.min())
+
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -299,65 +258,61 @@ with col2:
 with col3:
 
     st.metric(
-        "Máximo 5 años",
+        "Máximo",
         f"${maximo:,.2f}"
     )
 
 with col4:
 
     st.metric(
-        "Mínimo 5 años",
+        "Mínimo",
         f"${minimo:,.2f}"
     )
 
 
 # ============================================================
-# 1. INDICADORES FUNDAMENTALES
+# 1. FUNDAMENTALES
 # ============================================================
 
 st.header("1️⃣ Indicadores fundamentales")
 
-fundamentales = obtener_fundamentales(
-    ticker
-)
+fundamentales = obtener_fundamentales(ticker)
 
 fundamentales_df = pd.DataFrame(
     {
-        "Indicador": list(
-            fundamentales.keys()
-        ),
-        "Valor": list(
-            fundamentales.values()
-        )
+        "Indicador": fundamentales.keys(),
+        "Valor": fundamentales.values()
     }
 )
 
 
-def formato_fundamental(x):
+def formato_valor(x):
 
     if x is None:
         return "N/D"
 
-    if pd.isna(x):
-        return "N/D"
+    try:
+
+        if pd.isna(x):
+            return "N/D"
+
+    except Exception:
+
+        pass
 
     return x
 
 
 fundamentales_df["Valor"] = (
     fundamentales_df["Valor"]
-    .apply(formato_fundamental)
+    .apply(formato_valor)
 )
+
 
 st.dataframe(
     fundamentales_df,
     use_container_width=True,
     hide_index=True
-)
-
-st.caption(
-    "Los indicadores fundamentales corresponden "
-    "a la información disponible actualmente en Yahoo Finance."
 )
 
 
@@ -385,6 +340,7 @@ historical["Year"] = (
     historical.index.year
 )
 
+
 st.dataframe(
     historical.tail(10),
     use_container_width=True
@@ -409,25 +365,21 @@ annual_returns = (
 annual_returns_df = pd.DataFrame(
     {
         "Año": annual_returns.index,
-        "Rendimiento": annual_returns.values
+        "Rendimiento (%)":
+            annual_returns.values * 100
     }
 )
 
-annual_returns_df["Rendimiento (%)"] = (
-    annual_returns_df["Rendimiento"] * 100
-)
 
 st.dataframe(
-    annual_returns_df[
-        ["Año", "Rendimiento (%)"]
-    ],
+    annual_returns_df,
     use_container_width=True,
     hide_index=True
 )
 
 
 # ============================================================
-# 4. GRÁFICA DEL PRECIO
+# 4. PRECIO HISTÓRICO
 # ============================================================
 
 st.header("4️⃣ Precio histórico")
@@ -445,13 +397,9 @@ ax1.set_title(
     f"Precio de cierre - {ticker}"
 )
 
-ax1.set_xlabel(
-    "Fecha"
-)
+ax1.set_xlabel("Fecha")
 
-ax1.set_ylabel(
-    "Precio"
-)
+ax1.set_ylabel("Precio")
 
 ax1.grid(
     True,
@@ -460,9 +408,7 @@ ax1.grid(
 
 plt.tight_layout()
 
-st.pyplot(
-    fig1
-)
+st.pyplot(fig1)
 
 plt.close(fig1)
 
@@ -486,9 +432,7 @@ ax2.set_title(
     f"Rendimiento acumulado - {ticker}"
 )
 
-ax2.set_xlabel(
-    "Fecha"
-)
+ax2.set_xlabel("Fecha")
 
 ax2.set_ylabel(
     "Crecimiento de $1"
@@ -501,15 +445,13 @@ ax2.grid(
 
 plt.tight_layout()
 
-st.pyplot(
-    fig2
-)
+st.pyplot(fig2)
 
 plt.close(fig2)
 
 
 # ============================================================
-# 6. RENDIMIENTOS ANUALES - GRÁFICA
+# 6. RENDIMIENTOS ANUALES
 # ============================================================
 
 st.header("6️⃣ Rendimientos anuales")
@@ -527,9 +469,7 @@ ax3.set_title(
     f"Rendimientos anuales - {ticker}"
 )
 
-ax3.set_xlabel(
-    "Año"
-)
+ax3.set_xlabel("Año")
 
 ax3.set_ylabel(
     "Rendimiento (%)"
@@ -547,9 +487,7 @@ ax3.grid(
 
 plt.tight_layout()
 
-st.pyplot(
-    fig3
-)
+st.pyplot(fig3)
 
 plt.close(fig3)
 
@@ -562,38 +500,26 @@ st.header("7️⃣ Modelo de Bernoulli")
 
 st.markdown(
     """
-    Para cada día se define una variable aleatoria binaria:
+    Se define una variable aleatoria Bernoulli:
 
-    **X = 1 → Éxito:** rendimiento diario positivo.
+    **X = 1:** rendimiento diario positivo.
 
-    **X = 0 → Fracaso:** rendimiento diario cero o negativo.
+    **X = 0:** rendimiento diario cero o negativo.
     """
 )
 
 
-# ============================================================
-# DATOS DEL ÚLTIMO AÑO
-# ============================================================
+datos_1y = descargar_ultimo_anio(ticker)
 
-with st.spinner(
-    "Calculando el modelo de Bernoulli..."
-):
+close_1y = obtener_close(datos_1y)
 
-    datos_1y = descargar_ultimo_anio(
-        ticker
-    )
-
-
-close_1y = obtener_close(
-    datos_1y,
-    ticker
-)
+close_1y = close_1y.dropna()
 
 
 if close_1y.empty:
 
     st.warning(
-        "No fue posible obtener los datos del último año."
+        "No fue posible obtener información del último año."
     )
 
 else:
@@ -613,7 +539,7 @@ else:
         bernoulli_df.dropna()
     )
 
-    # Convertir a porcentaje
+    # Rendimiento en porcentaje
     bernoulli_df["Daily Returns (%)"] = (
         bernoulli_df["Daily Returns"] * 100
     )
@@ -625,17 +551,20 @@ else:
         0
     )
 
-    # ========================================================
-    # PROBABILIDADES
-    # ========================================================
-
+    # Probabilidad de éxito
     probabilidad_exito = (
         bernoulli_df["Binary Returns"].mean()
     )
 
+    # Probabilidad de fracaso
     probabilidad_fracaso = (
         1 - probabilidad_exito
     )
+
+
+    # ========================================================
+    # PROBABILIDADES
+    # ========================================================
 
     col1, col2 = st.columns(2)
 
@@ -655,11 +584,11 @@ else:
 
 
     # ========================================================
-    # DISTRIBUCIÓN BERNOULLI
+    # GRÁFICA BERNOULLI
     # ========================================================
 
     st.subheader(
-        "Distribución de probabilidad"
+        "Distribución Bernoulli"
     )
 
     categorias = [
@@ -682,7 +611,7 @@ else:
     )
 
     ax4.set_title(
-        f"Distribución Bernoulli - {ticker}"
+        f"Probabilidad de éxito y fracaso - {ticker}"
     )
 
     ax4.set_ylabel(
@@ -699,7 +628,6 @@ else:
         alpha=0.3
     )
 
-    # Porcentajes sobre las barras
     for i, valor in enumerate(
         probabilidades
     ):
@@ -713,9 +641,7 @@ else:
 
     plt.tight_layout()
 
-    st.pyplot(
-        fig4
-    )
+    st.pyplot(fig4)
 
     plt.close(fig4)
 
@@ -750,14 +676,12 @@ st.markdown(
     f"""
     ### Activo analizado: `{ticker}`
 
-    El precio actual del activo es:
+    **Precio actual:** ${precio_actual:,.2f}
 
-    **${precio_actual:,.2f}**
+    **Rendimiento acumulado:** {rendimiento_total * 100:.2f}%
 
-    El rendimiento acumulado durante los cinco años
-    disponibles en el análisis es:
-
-    **{rendimiento_total * 100:.2f}%**
+    El modelo de Bernoulli considera como éxito un día
+    en el que el rendimiento del activo es positivo.
     """
 )
 
@@ -765,25 +689,20 @@ if not close_1y.empty:
 
     st.markdown(
         f"""
-        Para el último año analizado, el modelo de Bernoulli
-        estima:
+        Para el último año:
 
-        - **Probabilidad de éxito:** {probabilidad_exito * 100:.2f}%
-        - **Probabilidad de fracaso:** {probabilidad_fracaso * 100:.2f}%
-
-        Donde un éxito representa un día con rendimiento
-        positivo y un fracaso representa un día con rendimiento
-        cero o negativo.
+        - Probabilidad de éxito: **{probabilidad_exito * 100:.2f}%**
+        - Probabilidad de fracaso: **{probabilidad_fracaso * 100:.2f}%**
         """
     )
 
 
 # ============================================================
-# PIE DE PÁGINA
+# PIE
 # ============================================================
 
 st.markdown("---")
 
 st.caption(
-    "Fuente de datos: Yahoo Finance | Biblioteca: yfinance"
+    "Fuente: Yahoo Finance | Biblioteca: yfinance"
 )
