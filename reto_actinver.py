@@ -1,125 +1,134 @@
-
 import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # ============================================================
 # CONFIGURACIÓN
 # ============================================================
 
 st.set_page_config(
-    page_title="Análisis Financiero - Yahoo Finance",
+    page_title="Reto Actinver - Análisis Financiero",
     page_icon="📈",
     layout="wide"
 )
 
-st.title("📈 Análisis Financiero con Yahoo Finance")
+st.title("📈 Reto Actinver")
+st.subheader("Análisis financiero con Yahoo Finance")
 
 st.markdown(
     """
-    Aplicación para analizar precios, rendimientos,
-    fundamentales y probabilidades de ganancia/pérdida.
+    Esta aplicación permite analizar una acción o activo financiero
+    utilizando su clave de Yahoo Finance.
+    
+    **Ejemplos:** SOFI, SLB, TSM, IWM, HOOD, BTC-USD
     """
 )
 
-
 # ============================================================
-# SELECCIÓN DEL TICKER
+# SIDEBAR - SELECCIÓN DEL ACTIVO
 # ============================================================
 
 st.sidebar.header("🔎 Selección del activo")
 
-ticker = st.sidebar.text_input(
-    "Ingrese la clave de Yahoo Finance:",
+ticker_input = st.sidebar.text_input(
+    "Clave de Yahoo Finance:",
     value="SOFI",
-    placeholder="Ejemplo: SOFI, BTC-USD, SLB, TSM, IWM, HOOD"
+    placeholder="Ejemplo: SOFI, TSM, BTC-USD"
 ).strip().upper()
 
+st.sidebar.markdown(
+    """
+    **Ejemplos de claves:**
+    - SOFI
+    - SLB
+    - TSM
+    - IWM
+    - HOOD
+    - BTC-USD
+    """
+)
 
-if not ticker:
-    st.warning("Ingrese una clave de Yahoo Finance.")
-    st.stop()
-
+analizar = st.sidebar.button(
+    "📊 Analizar activo",
+    type="primary",
+    use_container_width=True
+)
 
 # ============================================================
-# DESCARGAR DATOS
+# CONTROL DEL TICKER
+# ============================================================
+
+if "ticker_analizado" not in st.session_state:
+    st.session_state.ticker_analizado = "SOFI"
+
+if analizar:
+    if ticker_input == "":
+        st.sidebar.error("Ingrese una clave de Yahoo Finance.")
+    else:
+        st.session_state.ticker_analizado = ticker_input
+
+ticker = st.session_state.ticker_analizado
+
+st.info(f"Activo seleccionado: **{ticker}**")
+
+# ============================================================
+# FUNCIONES
 # ============================================================
 
 @st.cache_data(ttl=3600)
 def descargar_historicos(ticker):
-
-    datos = yf.download(
+    """
+    Descarga 5 años de información histórica.
+    """
+    return yf.download(
         ticker,
         period="5y",
         auto_adjust=False,
         progress=False
     )
 
-    return datos
-
 
 @st.cache_data(ttl=3600)
 def descargar_ultimo_anio(ticker):
-
-    datos = yf.download(
+    """
+    Descarga un año de información histórica.
+    """
+    return yf.download(
         ticker,
         period="1y",
         auto_adjust=False,
         progress=False
     )
 
-    return datos
 
-
-# ============================================================
-# CONSULTAR YAHOO FINANCE
-# ============================================================
-
-with st.spinner(
-    f"Consultando Yahoo Finance para {ticker}..."
-):
+@st.cache_data(ttl=3600)
+def obtener_fundamentales(ticker):
+    """
+    Obtiene indicadores fundamentales actuales.
+    """
 
     try:
+        activo = yf.Ticker(ticker)
+        info = activo.info
+    except Exception:
+        info = {}
 
-        historical_data = descargar_historicos(
-            ticker
-        )
+    return {
+        "Price/Earnings": info.get("trailingPE"),
+        "Price/Book": info.get("priceToBook"),
+        "Debt/Equity": info.get("debtToEquity"),
+        "Return on Equity": info.get("returnOnEquity"),
+        "Dividend Yield": info.get("dividendYield")
+    }
 
-        df1 = descargar_ultimo_anio(
-            ticker
-        )
-
-        if historical_data.empty:
-
-            st.error(
-                f"No se encontraron datos para {ticker}. "
-                "Verifique el ticker."
-            )
-
-            st.stop()
-
-    except Exception as e:
-
-        st.error(
-            f"No fue posible consultar Yahoo Finance: {e}"
-        )
-
-        st.stop()
-
-
-st.success(
-    f"Ticker {ticker} consultado correctamente."
-)
-
-
-# ============================================================
-# OBTENER PRECIO DE CIERRE
-# ============================================================
 
 def obtener_close(df, ticker):
+    """
+    Obtiene la columna Close de manera robusta,
+    incluso cuando yfinance devuelve MultiIndex.
+    """
 
     if df.empty:
         return pd.Series(dtype=float)
@@ -127,20 +136,19 @@ def obtener_close(df, ticker):
     # Caso MultiIndex
     if isinstance(df.columns, pd.MultiIndex):
 
-        # Intentar obtener Close -> ticker
+        # Intentar Close + ticker
         try:
-
             close = df["Close"][ticker]
 
+            if isinstance(close, pd.DataFrame):
+                close = close.iloc[:, 0]
+
             return close
-
         except Exception:
-
             pass
 
-        # Alternativa
+        # Intentar obtener nivel Close
         try:
-
             close = df.xs(
                 "Close",
                 axis=1,
@@ -148,12 +156,10 @@ def obtener_close(df, ticker):
             )
 
             if isinstance(close, pd.DataFrame):
-                return close.iloc[:, 0]
+                close = close.iloc[:, 0]
 
             return close
-
         except Exception:
-
             pass
 
     # Caso columnas normales
@@ -162,8 +168,7 @@ def obtener_close(df, ticker):
         close = df["Close"]
 
         if isinstance(close, pd.DataFrame):
-
-            return close.iloc[:, 0]
+            close = close.iloc[:, 0]
 
         return close
 
@@ -171,64 +176,130 @@ def obtener_close(df, ticker):
 
 
 # ============================================================
-# PRECIO HISTÓRICO
+# DESCARGA DE DATOS
 # ============================================================
 
-close_5y = obtener_close(
-    historical_data,
-    ticker
-)
+try:
 
-close_1y = obtener_close(
-    df1,
-    ticker
-)
+    datos_5y = descargar_historicos(ticker)
 
+    if datos_5y.empty:
+        st.error(
+            f"No se encontraron datos para **{ticker}**. "
+            "Verifique que la clave de Yahoo Finance sea correcta."
+        )
+        st.stop()
 
-if close_5y.empty:
+except Exception as e:
 
     st.error(
-        "No fue posible obtener la columna Close."
+        f"No fue posible consultar Yahoo Finance: {e}"
     )
 
     st.stop()
 
 
 # ============================================================
-# DATAFRAME HISTÓRICO
+# PRECIO DE CIERRE
 # ============================================================
 
-historical = pd.DataFrame(
-    index=close_5y.index
+close_5y = obtener_close(datos_5y, ticker)
+
+if close_5y.empty:
+    st.error("No fue posible obtener los precios de cierre.")
+    st.stop()
+
+close_5y = close_5y.dropna()
+
+# ============================================================
+# INFORMACIÓN GENERAL
+# ============================================================
+
+precio_actual = float(close_5y.iloc[-1])
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric(
+        "Precio actual",
+        f"${precio_actual:,.2f}"
+    )
+
+with col2:
+    precio_inicial = float(close_5y.iloc[0])
+
+    rendimiento_total = (
+        precio_actual / precio_inicial - 1
+    )
+
+    st.metric(
+        "Rendimiento 5 años",
+        f"{rendimiento_total * 100:.2f}%"
+    )
+
+with col3:
+    maximo = float(close_5y.max())
+
+    st.metric(
+        "Máximo 5 años",
+        f"${maximo:,.2f}"
+    )
+
+
+# ============================================================
+# FUNDAMENTALES
+# ============================================================
+
+st.header("1️⃣ Indicadores fundamentales")
+
+fundamentales = obtener_fundamentales(ticker)
+
+fundamentales_df = pd.DataFrame(
+    {
+        "Indicador": list(fundamentales.keys()),
+        "Valor": list(fundamentales.values())
+    }
 )
 
-historical["Close"] = close_5y
+fundamentales_df["Valor"] = fundamentales_df["Valor"].apply(
+    lambda x: "N/D" if x is None else x
+)
+
+st.dataframe(
+    fundamentales_df,
+    use_container_width=True,
+    hide_index=True
+)
+
+st.caption(
+    "Los indicadores fundamentales corresponden a la información "
+    "disponible actualmente en Yahoo Finance."
+)
 
 
 # ============================================================
 # RENDIMIENTOS DIARIOS
 # ============================================================
 
+st.header("2️⃣ Rendimientos diarios")
+
+historical = pd.DataFrame({
+    "Close": close_5y
+})
+
 historical["Daily Return"] = (
     historical["Close"].pct_change()
 )
-
-
-# ============================================================
-# RENDIMIENTO ACUMULADO
-# ============================================================
 
 historical["Cumulative Return"] = (
     1 + historical["Daily Return"]
 ).cumprod()
 
+historical["Year"] = historical.index.year
 
-# ============================================================
-# AÑO
-# ============================================================
-
-historical["Year"] = (
-    historical.index.year
+st.dataframe(
+    historical.tail(10),
+    use_container_width=True
 )
 
 
@@ -236,8 +307,9 @@ historical["Year"] = (
 # RENDIMIENTOS ANUALES
 # ============================================================
 
-annual_returns = (
+st.header("3️⃣ Rendimientos anuales")
 
+annual_returns = (
     historical
     .groupby("Year")["Daily Return"]
     .apply(
@@ -246,685 +318,285 @@ annual_returns = (
     )
 )
 
+annual_returns_df = pd.DataFrame({
+    "Año": annual_returns.index,
+    "Rendimiento": annual_returns.values
+})
 
-# ============================================================
-# MÉTRICAS
-# ============================================================
-
-precio_actual = (
-    historical["Close"].iloc[-1]
+annual_returns_df["Rendimiento"] = (
+    annual_returns_df["Rendimiento"] * 100
 )
 
-rendimiento_total = (
-    historical["Cumulative Return"].iloc[-1]
-    - 1
-)
-
-volatilidad_diaria = (
-    historical["Daily Return"].std()
-)
-
-volatilidad_anual = (
-    volatilidad_diaria * np.sqrt(252)
+st.dataframe(
+    annual_returns_df,
+    use_container_width=True,
+    hide_index=True
 )
 
 
 # ============================================================
-# FUNDAMENTALES
+# GRÁFICA DEL PRECIO
 # ============================================================
 
-@st.cache_data(ttl=3600)
-def obtener_fundamentales(ticker):
+st.header("4️⃣ Precio histórico")
 
-    activo = yf.Ticker(ticker)
+fig1, ax1 = plt.subplots(figsize=(12, 5))
 
-    try:
+ax1.plot(
+    historical.index,
+    historical["Close"]
+)
 
-        info = activo.info
+ax1.set_title(
+    f"Precio de cierre - {ticker}"
+)
 
-    except Exception:
+ax1.set_xlabel("Fecha")
+ax1.set_ylabel("Precio")
 
-        info = {}
+ax1.grid(True)
 
-    fundamentals = {
-
-        "Price/Earnings":
-            info.get("trailingPE"),
-
-        "Price/Book":
-            info.get("priceToBook"),
-
-        "Debt/Equity":
-            info.get("debtToEquity"),
-
-        "Return on Equity":
-            info.get("returnOnEquity"),
-
-        "Dividend Yield":
-            info.get("dividendYield")
-    }
-
-    return fundamentals
+st.pyplot(fig1)
 
 
-try:
+# ============================================================
+# GRÁFICA RENDIMIENTO ACUMULADO
+# ============================================================
 
-    fundamentals = obtener_fundamentales(
-        ticker
+st.header("5️⃣ Rendimiento acumulado")
+
+fig2, ax2 = plt.subplots(figsize=(12, 5))
+
+ax2.plot(
+    historical.index,
+    historical["Cumulative Return"]
+)
+
+ax2.set_title(
+    f"Rendimiento acumulado - {ticker}"
+)
+
+ax2.set_xlabel("Fecha")
+ax2.set_ylabel("Crecimiento de $1")
+
+ax2.grid(True)
+
+st.pyplot(fig2)
+
+
+# ============================================================
+# GRÁFICA DE RENDIMIENTOS ANUALES
+# ============================================================
+
+st.header("6️⃣ Rendimientos anuales")
+
+fig3, ax3 = plt.subplots(figsize=(12, 5))
+
+ax3.bar(
+    annual_returns_df["Año"].astype(str),
+    annual_returns_df["Rendimiento"]
+)
+
+ax3.set_title(
+    f"Rendimientos anuales - {ticker}"
+)
+
+ax3.set_xlabel("Año")
+ax3.set_ylabel("Rendimiento (%)")
+
+ax3.axhline(
+    y=0,
+    linewidth=1
+)
+
+ax3.grid(
+    axis="y",
+    alpha=0.3
+)
+
+st.pyplot(fig3)
+
+
+# ============================================================
+# BLOQUE BERNOULLI
+# ============================================================
+
+st.header("7️⃣ Modelo de Bernoulli")
+
+st.markdown(
+    """
+    Para cada día se define una variable aleatoria binaria:
+
+    - **1 = éxito:** rendimiento diario positivo.
+    - **0 = fracaso:** rendimiento diario cero o negativo.
+    """
+)
+
+datos_1y = descargar_ultimo_anio(ticker)
+
+close_1y = obtener_close(
+    datos_1y,
+    ticker
+)
+
+if close_1y.empty:
+
+    st.warning(
+        "No fue posible obtener los datos del último año."
     )
 
-except Exception:
+else:
 
-    fundamentals = {
+    bernoulli_df = pd.DataFrame({
+        "Close": close_1y
+    })
 
-        "Price/Earnings": None,
-
-        "Price/Book": None,
-
-        "Debt/Equity": None,
-
-        "Return on Equity": None,
-
-        "Dividend Yield": None
-    }
-
-
-# ============================================================
-# PESTAÑAS
-# ============================================================
-
-tab1, tab2, tab3, tab4 = st.tabs(
-    [
-        "📊 Resumen",
-        "📈 Rendimientos",
-        "🎲 Bernoulli",
-        "📋 Datos"
-    ]
-)
-
-
-# ============================================================
-# TAB 1 - RESUMEN
-# ============================================================
-
-with tab1:
-
-    st.header(
-        f"Resumen financiero: {ticker}"
+    bernoulli_df["Daily Returns"] = (
+        bernoulli_df["Close"].pct_change() * 100
     )
 
-    col1, col2, col3, col4 = st.columns(4)
+    bernoulli_df = bernoulli_df.dropna()
+
+    bernoulli_df["Binary Returns"] = np.where(
+        bernoulli_df["Daily Returns"] > 0,
+        1,
+        0
+    )
+
+    # ========================================================
+    # PROBABILIDADES
+    # ========================================================
+
+    probabilidad_exito = (
+        bernoulli_df["Binary Returns"].mean()
+    )
+
+    probabilidad_fracaso = (
+        1 - probabilidad_exito
+    )
+
+    col1, col2 = st.columns(2)
 
     with col1:
 
         st.metric(
-            "Precio actual",
-            f"${precio_actual:,.2f}"
+            "Probabilidad de éxito",
+            f"{probabilidad_exito * 100:.2f}%"
         )
 
     with col2:
 
         st.metric(
-            "Rendimiento 5 años",
-            f"{rendimiento_total * 100:.2f}%"
+            "Probabilidad de fracaso",
+            f"{probabilidad_fracaso * 100:.2f}%"
         )
 
-    with col3:
+    # ========================================================
+    # TABLA
+    # ========================================================
 
-        st.metric(
-            "Volatilidad diaria",
-            f"{volatilidad_diaria * 100:.2f}%"
-        )
-
-    with col4:
-
-        st.metric(
-            "Volatilidad anual",
-            f"{volatilidad_anual * 100:.2f}%"
-        )
-
-
-    # --------------------------------------------------------
-    # FUNDAMENTALES
-    # --------------------------------------------------------
-
-    st.subheader(
-        "📌 Fundamentales seleccionados"
-    )
-
-    fundamentals_df = pd.DataFrame(
-        list(fundamentals.items()),
-        columns=[
-            "Indicador",
-            "Valor"
-        ]
-    )
-
-
-    def formato_fundamental(
-        indicador,
-        valor
-    ):
-
-        if valor is None:
-            return "N/D"
-
-        if pd.isna(valor):
-            return "N/D"
-
-        if indicador in [
-            "Return on Equity",
-            "Dividend Yield"
-        ]:
-
-            return f"{valor * 100:.2f}%"
-
-        return f"{valor:.2f}"
-
-
-    fundamentals_df["Valor"] = (
-        fundamentals_df.apply(
-            lambda row:
-            formato_fundamental(
-                row["Indicador"],
-                row["Valor"]
-            ),
-            axis=1
-        )
-    )
-
+    st.subheader("Resultados del experimento de Bernoulli")
 
     st.dataframe(
-        fundamentals_df,
-        use_container_width=True,
-        hide_index=True
+        bernoulli_df.tail(20),
+        use_container_width=True
     )
 
-
-# ============================================================
-# TAB 2 - RENDIMIENTOS
-# ============================================================
-
-with tab2:
-
-    st.header(
-        f"📈 Rendimientos históricos de {ticker}"
-    )
-
-
-    # --------------------------------------------------------
-    # PRECIO
-    # --------------------------------------------------------
+    # ========================================================
+    # GRÁFICA BERNOULLI
+    # ========================================================
 
     st.subheader(
-        "Precio histórico - últimos 5 años"
+        "Distribución de éxito y fracaso"
     )
 
-    fig1, ax1 = plt.subplots(
-        figsize=(12, 5)
+    categorias = [
+        "Fracaso (0)",
+        "Éxito (1)"
+    ]
+
+    probabilidades = [
+        probabilidad_fracaso,
+        probabilidad_exito
+    ]
+
+    fig4, ax4 = plt.subplots(
+        figsize=(8, 5)
     )
 
-    ax1.plot(
-        historical.index,
-        historical["Close"],
-        label="Precio de cierre"
+    ax4.bar(
+        categorias,
+        probabilidades
     )
 
-    ax1.set_title(
-        f"Precio Histórico de {ticker}"
+    ax4.set_title(
+        f"Distribución Bernoulli - {ticker}"
     )
 
-    ax1.set_xlabel("Fecha")
-
-    ax1.set_ylabel("Precio ($)")
-
-    ax1.legend()
-
-    ax1.grid(alpha=0.3)
-
-    st.pyplot(fig1)
-
-    plt.close(fig1)
-
-
-    # --------------------------------------------------------
-    # RENDIMIENTO ACUMULADO
-    # --------------------------------------------------------
-
-    st.subheader(
-        "Rendimiento acumulado"
+    ax4.set_ylabel(
+        "Probabilidad"
     )
 
-    fig2, ax2 = plt.subplots(
-        figsize=(12, 5)
+    ax4.set_ylim(
+        0,
+        1
     )
 
-    ax2.plot(
-        historical.index,
-        historical["Cumulative Return"],
-        label="Rendimiento acumulado"
-    )
-
-    ax2.set_title(
-        f"Rendimiento Acumulado de {ticker}"
-    )
-
-    ax2.set_xlabel("Fecha")
-
-    ax2.set_ylabel("Crecimiento")
-
-    ax2.legend()
-
-    ax2.grid(alpha=0.3)
-
-    st.pyplot(fig2)
-
-    plt.close(fig2)
-
-
-    # --------------------------------------------------------
-    # RENDIMIENTOS ANUALES
-    # --------------------------------------------------------
-
-    st.subheader(
-        "Rendimientos anuales"
-    )
-
-    fig3, ax3 = plt.subplots(
-        figsize=(12, 5)
-    )
-
-    annual_returns.plot(
-        kind="bar",
-        ax=ax3
-    )
-
-    ax3.axhline(
-        y=0.10,
-        linestyle="--",
-        label="10%"
-    )
-
-    ax3.axhline(
-        y=0,
-        linestyle="-"
-    )
-
-    ax3.set_title(
-        f"Rendimientos Anuales de {ticker}"
-    )
-
-    ax3.set_xlabel("Año")
-
-    ax3.set_ylabel(
-        "Rendimiento"
-    )
-
-    ax3.legend()
-
-    ax3.grid(
+    ax4.grid(
         axis="y",
         alpha=0.3
     )
 
-    st.pyplot(fig3)
+    # Mostrar porcentaje sobre las barras
+    for i, valor in enumerate(probabilidades):
 
-    plt.close(fig3)
+        ax4.text(
+            i,
+            valor + 0.02,
+            f"{valor * 100:.2f}%",
+            ha="center"
+        )
 
-
-    # --------------------------------------------------------
-    # TABLA ANUAL
-    # --------------------------------------------------------
-
-    annual_table = pd.DataFrame(
-        annual_returns * 100
-    )
-
-    annual_table.columns = [
-        "Rendimiento (%)"
-    ]
-
-    annual_table[
-        "Rendimiento (%)"
-    ] = annual_table[
-        "Rendimiento (%)"
-    ].round(2)
-
-
-    st.dataframe(
-        annual_table,
-        use_container_width=True
-    )
+    st.pyplot(fig4)
 
 
 # ============================================================
-# TAB 3 - BERNOULLI
+# CONCLUSIÓN
 # ============================================================
 
-with tab3:
+st.header("8️⃣ Interpretación")
 
-    st.header(
-        f"🎲 Distribución de Bernoulli: {ticker}"
-    )
+st.markdown(
+    f"""
+    ### Activo analizado: `{ticker}`
 
-    st.markdown(
-        """
-        Para cada día del último año:
+    El análisis utiliza información histórica obtenida de Yahoo Finance.
 
-        **1 = Ganancia**
+    **Precio actual:** ${precio_actual:,.2f}
 
-        **0 = Pérdida o rendimiento no positivo**
-        """
-    )
+    **Rendimiento acumulado durante el periodo analizado:**
+    {rendimiento_total * 100:.2f}%
 
-
-    # --------------------------------------------------------
-    # CREAR DATAFRAME BERNOULLI
-    # --------------------------------------------------------
-
-    if close_1y.empty:
-
-        st.error(
-            "No hay datos del último año."
-        )
-
-    else:
-
-        bernoulli_df = pd.DataFrame(
-            index=close_1y.index
-        )
-
-        bernoulli_df["Close"] = (
-            close_1y
-        )
-
-        bernoulli_df[
-            "Daily Returns"
-        ] = (
-
-            bernoulli_df["Close"]
-            .pct_change() * 100
-        )
-
-        bernoulli_df = (
-            bernoulli_df.dropna()
-        )
-
-
-        # ----------------------------------------------------
-        # VARIABLE BERNOULLI
-        # ----------------------------------------------------
-
-        bernoulli_df[
-            "Binary Returns"
-        ] = np.where(
-
-            bernoulli_df[
-                "Daily Returns"
-            ] > 0,
-
-            1,
-
-            0
-        )
-
-
-        # ----------------------------------------------------
-        # PROBABILIDADES
-        # ----------------------------------------------------
-
-        probabilidad_exito = np.mean(
-            bernoulli_df[
-                "Binary Returns"
-            ]
-        )
-
-        probabilidad_fracaso = (
-            1 - probabilidad_exito
-        )
-
-
-        # ----------------------------------------------------
-        # MÉTRICAS
-        # ----------------------------------------------------
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-
-            st.metric(
-                "P(Ganancia)",
-                f"{probabilidad_exito * 100:.2f}%"
-            )
-
-        with col2:
-
-            st.metric(
-                "P(Pérdida)",
-                f"{probabilidad_fracaso * 100:.2f}%"
-            )
-
-        with col3:
-
-            st.metric(
-                "Observaciones",
-                f"{len(bernoulli_df):,}"
-            )
-
-
-        # ----------------------------------------------------
-        # GRÁFICO BERNOULLI
-        # ----------------------------------------------------
-
-        valores_posibles = [
-            0,
-            1
-        ]
-
-        probabilidades = [
-            probabilidad_fracaso,
-            probabilidad_exito
-        ]
-
-
-        fig4, ax4 = plt.subplots(
-            figsize=(8, 5)
-        )
-
-
-        barras = ax4.bar(
-            valores_posibles,
-            probabilidades
-        )
-
-
-        ax4.set_title(
-            f"Distribución de Bernoulli\n"
-            f"Rendimientos de {ticker}"
-        )
-
-
-        ax4.set_xlabel(
-            "Resultado"
-        )
-
-
-        ax4.set_ylabel(
-            "Probabilidad"
-        )
-
-
-        ax4.set_xticks(
-            [0, 1],
-            [
-                "Pérdida",
-                "Ganancia"
-            ]
-        )
-
-
-        ax4.set_ylim(
-            0,
-            max(probabilidades) * 1.25
-        )
-
-
-        ax4.grid(
-            axis="y",
-            alpha=0.3
-        )
-
-
-        # ----------------------------------------------------
-        # ETIQUETAS
-        # ----------------------------------------------------
-
-        for barra, prob in zip(
-            barras,
-            probabilidades
-        ):
-
-            ax4.text(
-
-                barra.get_x()
-                + barra.get_width() / 2,
-
-                barra.get_height(),
-
-                f"{prob * 100:.2f}%",
-
-                ha="center",
-
-                va="bottom",
-
-                fontsize=11
-            )
-
-
-        st.pyplot(fig4)
-
-        plt.close(fig4)
-
-
-        # ----------------------------------------------------
-        # INTERPRETACIÓN
-        # ----------------------------------------------------
-
-        st.subheader(
-            "📝 Interpretación"
-        )
-
-        st.write(
-            f"""
-            Para **{ticker}**, durante el último año,
-            la probabilidad histórica estimada de obtener
-            un rendimiento diario positivo fue de:
-
-            **{probabilidad_exito * 100:.2f}%**
-
-            mientras que la probabilidad de obtener un
-            rendimiento diario no positivo fue de:
-
-            **{probabilidad_fracaso * 100:.2f}%**
-            """
-        )
-
-
-# ============================================================
-# TAB 4 - DATOS
-# ============================================================
-
-with tab4:
-
-    st.header(
-        "📋 Datos"
-    )
-
-
-    # --------------------------------------------------------
-    # DATOS 5 AÑOS
-    # --------------------------------------------------------
-
-    st.subheader(
-        "Datos históricos de 5 años"
-    )
-
-    st.dataframe(
-        historical,
-        use_container_width=True
-    )
-
-
-    # --------------------------------------------------------
-    # DESCARGA
-    # --------------------------------------------------------
-
-    csv = (
-        historical
-        .to_csv()
-        .encode("utf-8")
-    )
-
-
-    st.download_button(
-
-        label="⬇️ Descargar datos históricos",
-
-        data=csv,
-
-        file_name=(
-            f"{ticker}_historico_5y.csv"
-        ),
-
-        mime="text/csv"
-    )
-
-
-    # --------------------------------------------------------
-    # DATOS BERNOULLI
-    # --------------------------------------------------------
-
-    if not close_1y.empty:
-
-        st.subheader(
-            "Datos utilizados para Bernoulli"
-        )
-
-        st.dataframe(
-            bernoulli_df,
-            use_container_width=True
-        )
-
-
-        csv_bernoulli = (
-            bernoulli_df
-            .to_csv()
-            .encode("utf-8")
-        )
-
-
-        st.download_button(
-
-            label="⬇️ Descargar datos Bernoulli",
-
-            data=csv_bernoulli,
-
-            file_name=(
-                f"{ticker}_bernoulli_1y.csv"
-            ),
-
-            mime="text/csv"
-        )
-
-
-# ============================================================
-# PIE DE PÁGINA
-# ============================================================
-
-st.divider()
-
-st.caption(
-    "Fuente: Yahoo Finance mediante yfinance. "
-    "Los datos de mercado y fundamentales pueden actualizarse."
+    En el modelo de Bernoulli, un día se considera **éxito**
+    cuando el rendimiento diario es positivo y **fracaso**
+    cuando es cero o negativo.
+    """
 )
 
+if not close_1y.empty:
+
+    st.markdown(
+        f"""
+        Durante el último año analizado:
+
+        - Probabilidad de éxito:
+          **{probabilidad_exito * 100:.2f}%**
+
+        - Probabilidad de fracaso:
+          **{probabilidad_fracaso * 100:.2f}%**
+        """
+    )
+
+st.caption(
+    "Fuente de datos: Yahoo Finance mediante yfinance."
+)
