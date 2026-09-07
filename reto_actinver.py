@@ -27,29 +27,15 @@ st.write(
 # ============================================================
 # SIDEBAR - CLAVE DE LA ACCIÓN
 # ============================================================
-
 st.sidebar.header("🔎 Selección del activo")
 
 ticker = st.sidebar.text_input(
     "Ingrese la clave de Yahoo Finance:",
     value="BIMBOA.MX",
-    placeholder="Ejemplo: AAPL, TSLA, NVDA, BIMBOA.MX"
+    placeholder="Ejemplo: AAPL, TSLA, NVDA"
 ).strip().upper()
 
-st.sidebar.caption(
-    "Ejemplos: BIMBOA.MX, AAPL, TSLA, NVDA, MSFT, BTC-USD"
-)
-
-# Validar que se haya ingresado una clave
-if ticker == "":
-    st.warning(
-        "Ingrese una clave de Yahoo Finance en el menú lateral."
-    )
-    st.stop()
-
-st.sidebar.markdown("---")
-
-st.sidebar.success(
+st.sidebar.write(
     f"Activo seleccionado: {ticker}"
 )
 # ============================================================
