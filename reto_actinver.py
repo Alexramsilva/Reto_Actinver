@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 # ============================================================
 # CONFIGURACIÓN
 # ============================================================
+st.image("UNRC.png", caption="Universidad Nacional Rosario Castellanos", width=300)
 
 st.set_page_config(
     page_title="Reto Actinver",
