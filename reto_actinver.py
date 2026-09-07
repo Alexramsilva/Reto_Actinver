@@ -7,7 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1_XsKc1qX3lDPes4uCMEnU78-JB4C9dsX
 """
 
-```python
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -883,4 +882,3 @@ st.caption(
     "Fuente: Yahoo Finance mediante yfinance. "
     "Los datos y fundamentales pueden actualizarse con el tiempo."
 )
-```
