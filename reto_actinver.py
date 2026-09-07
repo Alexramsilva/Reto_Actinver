@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 # CONFIGURACIÓN
 # ============================================================
 st.image("UNRC.png", caption="Universidad Nacional Rosario Castellanos", width=300)
+st.subheader("Licenciatura en Contaduría y Finanzas UNRC")
 
 st.set_page_config(
     page_title="Reto Actinver 2026",
@@ -15,7 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📈 Reto Actinver")
+st.title("📈 Reto Actinver 2026")
 st.subheader("Análisis financiero con Yahoo Finance")
 
 st.write(
@@ -207,7 +208,7 @@ if close_5y.empty:
 # ============================================================
 
 st.success(
-    f"📌 Activo analizado: **{ticker}**"
+    f"Activo analizado: **{ticker}**"
 )
 
 
@@ -267,7 +268,7 @@ with col4:
 # 1. FUNDAMENTALES
 # ============================================================
 
-st.header("1️⃣ Indicadores fundamentales")
+st.header("Indicadores fundamentales")
 
 fundamentales = obtener_fundamentales(ticker)
 
@@ -314,7 +315,7 @@ st.dataframe(
 # 2. RENDIMIENTOS DIARIOS
 # ============================================================
 
-st.header("2️⃣ Rendimientos diarios")
+st.header("Rendimientos diarios")
 
 
 historical = pd.DataFrame(
@@ -349,7 +350,7 @@ st.dataframe(
 # 3. RENDIMIENTOS ANUALES
 # ============================================================
 
-st.header("3️⃣ Rendimientos anuales")
+st.header("Rendimientos anuales")
 
 
 annual_returns = (
@@ -382,7 +383,7 @@ st.dataframe(
 # 4. PRECIO HISTÓRICO
 # ============================================================
 
-st.header("4️⃣ Precio histórico")
+st.header("Precio histórico")
 
 
 fig1, ax1 = plt.subplots(
@@ -426,7 +427,7 @@ plt.close(fig1)
 # 5. RENDIMIENTO ACUMULADO
 # ============================================================
 
-st.header("5️⃣ Rendimiento acumulado")
+st.header("Rendimiento acumulado")
 
 
 fig2, ax2 = plt.subplots(
@@ -472,7 +473,7 @@ plt.close(fig2)
 # 6. RENDIMIENTOS ANUALES
 # ============================================================
 
-st.header("6️⃣ Rendimientos anuales")
+st.header("Rendimientos anuales")
 
 
 fig3, ax3 = plt.subplots(
@@ -524,7 +525,7 @@ plt.close(fig3)
 # 7. MODELO DE BERNOULLI
 # ============================================================
 
-st.header("7️⃣ Modelo de Bernoulli")
+st.header("Modelo de Bernoulli")
 
 
 st.markdown(
@@ -730,7 +731,7 @@ else:
 # 8. INTERPRETACIÓN
 # ============================================================
 
-st.header("8️⃣ Interpretación")
+st.header("Interpretación")
 
 
 st.markdown(
