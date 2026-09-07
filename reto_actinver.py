@@ -22,30 +22,28 @@ st.write(
 )
 
 # ============================================================
-# SELECCIÓN DEL ACTIVO
+# INGRESAR CLAVE DEL ACTIVO
 # ============================================================
 
-st.sidebar.header("🔎 Selección del activo")
+st.markdown("### 🔎 Selección del activo")
 
-ticker = st.sidebar.text_input(
-    "Escriba la clave de Yahoo Finance",
-    placeholder="Ejemplo: BIMBOA.MX"
+ticker = st.text_input(
+    "Clave de Yahoo Finance:",
+    placeholder="Ejemplo: BIMBOA.MX",
+    help="Escriba el ticker exactamente como aparece en Yahoo Finance."
 ).strip().upper()
 
-
 # ============================================================
-# VALIDAR QUE EL USUARIO ESCRIBIÓ UNA CLAVE
+# VALIDAR TICKER
 # ============================================================
 
 if not ticker:
 
     st.info(
-        "👈 Escriba en el menú lateral la clave de la acción "
-        "que desea analizar."
+        "👆 Escriba la clave de la acción en el campo anterior."
     )
 
     st.stop()
-
 
 # ============================================================
 # FUNCIONES
@@ -102,7 +100,7 @@ def obtener_fundamentales(ticker):
 
 
 # ============================================================
-# FUNCIÓN PARA OBTENER CLOSE
+# OBTENER PRECIO DE CIERRE
 # ============================================================
 
 def obtener_close(df):
@@ -207,7 +205,7 @@ if close_5y.empty:
 # ACTIVO SELECCIONADO
 # ============================================================
 
-st.info(
+st.success(
     f"📌 Activo analizado: **{ticker}**"
 )
 
@@ -576,10 +574,6 @@ else:
     )
 
 
-    # --------------------------------------------------------
-    # Rendimiento diario
-    # --------------------------------------------------------
-
     bernoulli_df["Daily Returns"] = (
         bernoulli_df["Close"].pct_change()
     )
@@ -590,18 +584,10 @@ else:
     )
 
 
-    # --------------------------------------------------------
-    # Rendimiento en porcentaje
-    # --------------------------------------------------------
-
     bernoulli_df["Daily Returns (%)"] = (
         bernoulli_df["Daily Returns"] * 100
     )
 
-
-    # --------------------------------------------------------
-    # Variable Bernoulli
-    # --------------------------------------------------------
 
     bernoulli_df["Binary Returns"] = np.where(
         bernoulli_df["Daily Returns"] > 0,
@@ -610,18 +596,10 @@ else:
     )
 
 
-    # --------------------------------------------------------
-    # Probabilidad de éxito
-    # --------------------------------------------------------
-
     probabilidad_exito = (
         bernoulli_df["Binary Returns"].mean()
     )
 
-
-    # --------------------------------------------------------
-    # Probabilidad de fracaso
-    # --------------------------------------------------------
 
     probabilidad_fracaso = (
         1 - probabilidad_exito
@@ -785,7 +763,6 @@ if not close_1y.empty:
 # ============================================================
 
 st.markdown("---")
-
 
 st.caption(
     "Fuente: Yahoo Finance | Biblioteca: yfinance"
