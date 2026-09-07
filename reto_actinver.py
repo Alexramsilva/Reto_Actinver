@@ -28,7 +28,7 @@ st.write(
 st.sidebar.header("🔎 Selección del activo")
 
 opciones = [
-    "SOFI",
+    "BIMBOA.MX",
     "SLB",
     "TSM",
     "IWM",
