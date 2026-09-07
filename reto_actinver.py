@@ -16,7 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📈 Reto Actinver 2026")
+st.title("Reto Actinver 2026")
 st.subheader("Análisis financiero con Yahoo Finance")
 
 st.write(
