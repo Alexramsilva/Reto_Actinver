@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 st.image("UNRC.png", caption="Universidad Nacional Rosario Castellanos", width=300)
 
 st.set_page_config(
-    page_title="Reto Actinver",
+    page_title="Reto Actinver 2026",
     page_icon="📈",
     layout="wide"
 )
