@@ -87,7 +87,9 @@ def obtener_fundamentales(ticker):
             "Price/Book": info.get("priceToBook"),
             "Debt/Equity": info.get("debtToEquity"),
             "Return on Equity": info.get("returnOnEquity"),
-            "Dividend Yield": info.get("dividendYield")
+            "Dividend Yield": info.get("dividendYield"),
+            "1Y Target Estimate": info.get("targetMeanPrice"),
+            "Beta": info.get("beta")
         }
 
     except Exception:
