@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+from datetime import datetime
 # ============================================================
 # CONFIGURACIÓN
 # ============================================================
@@ -90,7 +90,7 @@ def obtener_fundamentales(ticker):
             "Return on Equity": info.get("returnOnEquity"),
             "Dividend Yield": info.get("dividendYield"),
             "1Y Target Estimate": info.get("targetMeanPrice"),
-            "Ex-Dividend Date": info.get("exDividendDate")
+            "Ex-Dividend Date": datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y"),
                 }
     except Exception:
 
