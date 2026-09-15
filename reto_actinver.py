@@ -81,11 +81,7 @@ def obtener_fundamentales(ticker):
         activo = yf.Ticker(ticker)
 
         info = activo.info
-        if ex_dividend:
-            ex_dividend = datetime.fromtimestamp(ex_dividend).strftime("%d/%m/%Y")
-        else:
-            ex_dividend = "N/D"
-
+        
 
         return {
             "Price/Earnings": info.get("trailingPE"),
@@ -94,8 +90,7 @@ def obtener_fundamentales(ticker):
             "Return on Equity": info.get("returnOnEquity"),
             "Dividend Yield": info.get("dividendYield"),
             "1Y Target Estimate": info.get("targetMeanPrice"),
-            "Ex-Dividend Date": ex_dividend,                    
-        }
+                }
     except Exception:
 
         return {
@@ -104,8 +99,7 @@ def obtener_fundamentales(ticker):
             "Debt/Equity": None,
             "Return on Equity": None,
             "Dividend Yield": None,
-            "Ex-Dividend Date": "N/D",
-            
+                    
                     }
 
 
