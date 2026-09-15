@@ -100,8 +100,7 @@ def obtener_fundamentales(ticker):
             "Debt/Equity": None,
             "Return on Equity": None,
             "Dividend Yield": None,
-            "Ex-Dividend Date": None,
-                    
+                               
                     }
 
 # ============================================================
