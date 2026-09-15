@@ -89,7 +89,6 @@ def obtener_fundamentales(ticker):
             "Return on Equity": info.get("returnOnEquity"),
             "Dividend Yield": info.get("dividendYield"),
             "1Y Target Estimate": info.get("targetMeanPrice"),
-            "Ex-Dividend Date": datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y")
                     
         }
     except Exception:
