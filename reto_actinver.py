@@ -117,8 +117,10 @@ def fecha_dividendo(ticker):
         return {
             "Fecha Dividendo": "No disponible"
         }
+resultado = fecha_dividendo(ticker)
 
-   ##### 
+st.write("Fecha Dividendo:", resultado["Fecha Dividendo"])
+##### 
     
 # ============================================================
 # OBTENER PRECIO DE CIERRE
