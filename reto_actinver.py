@@ -102,6 +102,7 @@ def obtener_fundamentales(ticker):
                                
                     }
 "Ex-Dividend Date": datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y")
+return{"Ex-Dividend Date"}
 # ============================================================
 # OBTENER PRECIO DE CIERRE
 # ============================================================
