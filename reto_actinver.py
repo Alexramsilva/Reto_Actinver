@@ -101,6 +101,7 @@ def obtener_fundamentales(ticker):
             "Dividend Yield": None,
                                
                     }
+    @st.cache_data(ttl=3600)    
     def fecha_dividendo(ticker):
         try:
 
