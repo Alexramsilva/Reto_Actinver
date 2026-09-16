@@ -102,7 +102,8 @@ def obtener_fundamentales(ticker):
                                
                     }
         def fecha_dividendo(ticker):
-            return {"Ex-Dividend Date:",datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y")}
+            return {datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y")}
+            st.metric("Fecha Dividendo:", datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y"))
 # ============================================================
 # OBTENER PRECIO DE CIERRE
 # ============================================================
