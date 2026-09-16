@@ -104,7 +104,7 @@ def obtener_fundamentales(ticker):
 
    #####
     @st.cache_data(ttl=3600)
-def fecha_dividendo(ticker):
+    def fecha_dividendo(ticker):
     try:
         activo = yf.Ticker(ticker)
         info = activo.info
