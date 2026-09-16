@@ -119,7 +119,7 @@ def fecha_dividendo(ticker):
         }
 resultado = fecha_dividendo(ticker)
 
-st.write("Fecha Dividendo:", resultado["Fecha Dividendo"])
+st.metric("Fecha Dividendo:", resultado["Fecha Dividendo"])
 ##### 
     
 # ============================================================
