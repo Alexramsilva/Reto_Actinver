@@ -103,19 +103,17 @@ def obtener_fundamentales(ticker):
                     }
 
    #####
-    @st.cache_data(ttl=3600)
-    def fecha_dividendo(ticker):
+@st.cache_data(ttl=3600)
+def fecha_dividendo(ticker):
     try:
         activo = yf.Ticker(ticker)
         info = activo.info
 
         return {
-            "Fecha Dividendo": datetime.fromtimestamp(
-                info.get("exDividendDate")
-            ).strftime("%d/%m/%Y")
+            "Fecha Dividendo": datetime.fromtimestamp(info.get("exDividendDate")).strftime("%d/%m/%Y")
         }
 
-    except Exception as e:
+    except Exception:
         return {
             "Fecha Dividendo": "No disponible"
         }
