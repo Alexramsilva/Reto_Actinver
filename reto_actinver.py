@@ -90,7 +90,7 @@ def obtener_fundamentales(ticker):
             "Return on Equity": info.get("returnOnEquity"),
             "Dividend Yield": info.get("dividendYield"),
             "1Y Target Estimate": info.get("targetMeanPrice"),
-            "Margen Neto":  np.round((income.loc["Net Income"]/income.loc["Total Revenue"]),2) 
+            "Margen Neto":  np.round((income.loc["Net Income"].iloc[0]/income.loc["Total Revenue"].iloc[0]),2) 
             
                    }
     except Exception:
