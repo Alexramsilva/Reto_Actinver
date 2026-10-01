@@ -8,7 +8,7 @@ from datetime import datetime
 # CONFIGURACIÓN
 # ============================================================
 st.image("UNRC.svg", caption="Universidad Nacional Rosario Castellanos")
-st.subheader("Licenciatura en Contaduría y Finanzas UNRC")
+st.title("Licenciatura en Contaduría y Finanzas UNRC")
 
 st.set_page_config(
     page_title="Reto Actinver 2026",
@@ -16,7 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Reto Actinver 2026")
+st.subheader("Reto Actinver 2026")
 st.subheader("Análisis financiero con Yahoo Finance")
 
 st.write(
