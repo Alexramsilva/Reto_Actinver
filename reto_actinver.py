@@ -421,7 +421,7 @@ ax1.plot(
 
 ax1.plot(
     historical.index,
-    historical.rolling(20).mean(),
+    historical["Close"].rolling(20).mean(),
     linestyle="--",
     label="MA(20)"
 )
