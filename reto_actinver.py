@@ -419,7 +419,15 @@ ax1.plot(
     historical["Close"]
 )
 
-
+# Último dato en verde
+ax.scatter(
+    historical.index[-1],
+    historical['Close'].iloc[-1],
+    color='#00FF00',
+    s=80,
+    label='Último dato',
+    zorder=5
+)
 ax1.set_title(
     f"Precio de cierre - {ticker}"
 )
