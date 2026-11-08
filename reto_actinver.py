@@ -423,7 +423,7 @@ ax1.plot(
     historical.index,
     historical["Close"].rolling(20).mean(),
     linestyle="--",
-    color="#009288",
+    color="#404040",
     label="MA(20)"
 )
 
