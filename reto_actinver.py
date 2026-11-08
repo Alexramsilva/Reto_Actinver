@@ -11,16 +11,16 @@ st.image("UNRC.svg", caption="Universidad Nacional Rosario Castellanos")
 st.title("Licenciatura en Contaduría y Finanzas UNRC")
 
 st.set_page_config(
-    page_title="Reto Actinver 2026",
+    page_title="Reto Chayito: Trading Financiero",
     page_icon="📈",
     layout="wide"
 )
 
-st.subheader("Reto Actinver 2026")
+st.subheader("Reto Chayito: Trading Financiero")
 st.subheader("Análisis financiero con Yahoo Finance")
 
 st.write(
-    "Escriba la clave de Yahoo Finance del activo que desea analizar."
+    "Escribe la clave de Yahoo Finance del activo que deseas analizar."
 )
 
 # ============================================================
