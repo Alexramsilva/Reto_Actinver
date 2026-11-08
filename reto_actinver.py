@@ -420,7 +420,7 @@ ax1.plot(
 )
 
 # Último dato en verde
-ax.scatter(
+ax1.scatter(
     historical.index[-1],
     historical['Close'].iloc[-1],
     color='#00FF00',
