@@ -423,7 +423,7 @@ ax1.plot(
 ax1.scatter(
     historical.index[-1],
     historical['Close'].iloc[-1],
-    color='#670F37',
+    color='red',
     s=80,
     label='Último dato',
     zorder=5
