@@ -419,6 +419,13 @@ ax1.plot(
     historical["Close"]
 )
 
+ax1.plot(
+    historical.index,
+    historical["Close"].rolling(20).mean()
+    linestyle="--",
+    label="MA(20)"
+)
+
 # Último dato en verde
 ax1.scatter(
     historical.index[-1],
